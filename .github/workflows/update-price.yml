@@ -1,0 +1,32 @@
+name: Update GME price
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-price:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch quote and write price.json
+        env:
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
+        run: |
+          curl -s "https://finnhub.io/api/v1/quote?symbol=GME&token=$FINNHUB_KEY" \
+            | jq --arg updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '. + {updated: $updated}' \
+            > price.json
+          cat price.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add price.json
+          git diff --cached --quiet || git commit -m "Update GME price"
+          git push

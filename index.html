@@ -211,49 +211,6 @@
     font-size: 0.85rem;
   }
 
-  #key-setup {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-  }
-
-  #key-setup.hidden {
-    display: none;
-  }
-
-  #key-setup p {
-    margin: 0 0 10px;
-    color: var(--muted);
-    font-size: 0.85rem;
-    line-height: 1.4;
-  }
-
-  #key-setup a {
-    color: var(--accent);
-  }
-
-  .key-setup-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  #key-input {
-    flex: 1;
-    min-width: 200px;
-    background: #0f1117;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--text);
-    font-size: 0.9rem;
-  }
-
-  #key-save-btn {
-    background: linear-gradient(135deg, var(--accent), #22d3ee);
-    color: #0a0e14;
-  }
-
   /* --- News section --- */
   #news-header {
     display: flex;
@@ -433,15 +390,6 @@
       <div id="ticker-change"></div>
       <div id="ticker-meta">Loading…</div>
     </div>
-    <div id="key-setup" class="hidden">
-      <p>To show a live price, paste a free Finnhub API key (get one at
-        <a href="https://finnhub.io/register" target="_blank" rel="noopener noreferrer">finnhub.io/register</a>,
-        no card needed). It's saved only in your own browser, never sent anywhere but Finnhub.</p>
-      <div class="key-setup-row">
-        <input id="key-input" type="text" placeholder="Paste your Finnhub API key">
-        <button id="key-save-btn">Save</button>
-      </div>
-    </div>
   </section>
 
   <section class="card">
@@ -535,56 +483,36 @@
 
   renderCounter();
 
-  // --- Live price ticker (Finnhub free tier: https://finnhub.io) ---
-  // The API key lives only in the visitor's own browser localStorage, entered
-  // via the form below, so this public page's source never contains a real key.
+  // --- Live price ticker ---
+  // A GitHub Actions workflow (.github/workflows/update-price.yml) fetches this
+  // from Finnhub every 15 minutes using a private repo secret and writes it to
+  // price.json, so every visitor sees the price with no API key of their own.
   const priceEl = document.getElementById('ticker-price');
   const changeEl = document.getElementById('ticker-change');
   const tickerMetaEl = document.getElementById('ticker-meta');
-  const keySetupEl = document.getElementById('key-setup');
-  const keyInputEl = document.getElementById('key-input');
-  const keySaveBtn = document.getElementById('key-save-btn');
 
   async function loadPrice() {
-    const key = localStorage.getItem('finnhub_key');
-    if (!key) {
-      keySetupEl.classList.remove('hidden');
-      tickerMetaEl.textContent = 'Add an API key below to load the live price.';
-      return;
-    }
-
     try {
-      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=GME&token=${key}`);
+      const res = await fetch('price.json?t=' + Date.now());
       const data = await res.json();
 
-      if (data.error) throw new Error(data.error);
       if (typeof data.c !== 'number' || data.c === 0) {
-        throw new Error('No quote returned');
+        throw new Error('No quote in price.json');
       }
 
-      keySetupEl.classList.add('hidden');
       priceEl.textContent = '$' + data.c.toFixed(2);
       const sign = data.d >= 0 ? '+' : '';
       changeEl.textContent = `${sign}${data.d.toFixed(2)} (${sign}${data.dp.toFixed(2)}%)`;
       changeEl.className = data.d >= 0 ? 'up' : 'down';
-      tickerMetaEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
+      tickerMetaEl.textContent = 'Updated ' + new Date(data.updated).toLocaleString();
     } catch (err) {
-      tickerMetaEl.textContent = 'Could not load price — check your API key below.';
-      keySetupEl.classList.remove('hidden');
+      tickerMetaEl.textContent = 'Could not load price right now.';
       console.error(err);
     }
   }
 
-  keySaveBtn.addEventListener('click', () => {
-    const key = keyInputEl.value.trim();
-    if (!key) return;
-    localStorage.setItem('finnhub_key', key);
-    keyInputEl.value = '';
-    loadPrice();
-  });
-
   loadPrice();
-  setInterval(loadPrice, 15000);
+  setInterval(loadPrice, 60000);
 
   // --- News feed ---
   // Google News RSS has no CORS headers for direct browser fetch, so we
