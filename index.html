@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GME Pulse — Sandbox</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --border: #2a2f3d;
+    --text: #e8e9ee;
+    --muted: #9aa0b0;
+    --accent: #5eead4;
+    --accent-2: #a78bfa;
+    --danger: #f87171;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: radial-gradient(ellipse 900px 500px at 50% -10%, #2a1b4a 0%, var(--bg) 60%) var(--bg);
+    color: var(--text);
+    padding: 24px;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1.5px 1.5px at 70% 60%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 10% 90%, rgba(255,255,255,.4), transparent);
+    background-repeat: repeat;
+    background-size: 220px 220px;
+    animation: drift 90s linear infinite;
+    opacity: 0.7;
+  }
+
+  @keyframes drift {
+    from { background-position: 0 0; }
+    to { background-position: -220px 440px; }
+  }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 24px;
+    text-align: center;
+  }
+
+  .hero {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .rocket {
+    animation: float 3s ease-in-out infinite;
+    transform-origin: center;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .flame {
+    animation: flicker 0.25s ease-in-out infinite alternate;
+    transform-origin: 60px 96px;
+  }
+
+  @keyframes flicker {
+    from { transform: scaleY(1); opacity: 1; }
+    to { transform: scaleY(1.3); opacity: 0.85; }
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 2.6rem;
+    font-weight: 800;
+    display: inline-block;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), #fbbf24, var(--accent));
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shine 5s linear infinite;
+    filter: drop-shadow(0 0 18px rgba(167, 139, 250, 0.35));
+  }
+
+  @keyframes shine {
+    to { background-position: 300% center; }
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    gap: 20px;
+  }
+
+  .card {
+    background: linear-gradient(160deg, var(--panel), #14101f);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 10px 30px -14px rgba(0,0,0,0.7);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 0 1px rgba(167,139,250,0.25), 0 16px 34px -12px rgba(0,0,0,0.75), 0 0 24px -6px var(--accent-2);
+  }
+
+  .card h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+  }
+
+  /* --- Diamond hands widget --- */
+  #counter-widget {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  #hodl-count {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 70px;
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  #hodl-btn {
+    background: linear-gradient(135deg, var(--accent), #22d3ee);
+    color: #0a0e14;
+    box-shadow: 0 0 16px rgba(94, 234, 212, 0.45);
+    transition: transform 0.08s ease, box-shadow 0.2s ease;
+  }
+
+  #hodl-btn:hover {
+    box-shadow: 0 0 26px rgba(94, 234, 212, 0.75);
+    transform: translateY(-1px);
+  }
+
+  #hodl-btn:active {
+    transform: scale(0.94);
+  }
+
+  #reset-btn {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    transition: box-shadow 0.2s ease;
+  }
+
+  #reset-btn:hover {
+    box-shadow: 0 0 14px rgba(248, 113, 113, 0.4);
+  }
+
+  #mood {
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  /* --- Price ticker --- */
+  #ticker-widget {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  #ticker-price {
+    font-size: 2.6rem;
+    font-weight: 800;
+    text-shadow: 0 0 22px rgba(94, 234, 212, 0.4);
+  }
+
+  #ticker-change {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  #ticker-change.up { color: #4ade80; }
+  #ticker-change.down { color: var(--danger); }
+
+  #ticker-meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  #key-setup {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  #key-setup.hidden {
+    display: none;
+  }
+
+  #key-setup p {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  #key-setup a {
+    color: var(--accent);
+  }
+
+  .key-setup-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  #key-input {
+    flex: 1;
+    min-width: 200px;
+    background: #0f1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  #key-save-btn {
+    background: linear-gradient(135deg, var(--accent), #22d3ee);
+    color: #0a0e14;
+  }
+
+  /* --- News section --- */
+  #news-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #refresh-btn {
+    background: linear-gradient(135deg, var(--accent-2), #f472b6);
+    color: #14101f;
+    box-shadow: 0 0 16px rgba(167, 139, 250, 0.45);
+    transition: transform 0.08s ease, box-shadow 0.2s ease;
+  }
+
+  #refresh-btn:hover {
+    box-shadow: 0 0 26px rgba(167, 139, 250, 0.75);
+    transform: translateY(-1px);
+  }
+
+  #news-list {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+  }
+
+  #news-list li {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  #news-list li:last-child {
+    border-bottom: none;
+  }
+
+  #news-list a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  #news-list a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .news-meta {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 2px;
+  }
+
+  #news-status {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* --- Confetti + milestone effects --- */
+  .confetti-piece {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    pointer-events: none;
+    z-index: 1000;
+    animation: confetti-fall linear forwards;
+  }
+
+  @keyframes confetti-fall {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--drift), var(--fall)) rotate(var(--spin)); opacity: 0; }
+  }
+
+  #hodl-count.milestone-pulse {
+    animation: milestone-pulse 0.9s ease;
+  }
+
+  @keyframes milestone-pulse {
+    0% { transform: scale(1); text-shadow: none; }
+    40% { transform: scale(1.5); text-shadow: 0 0 30px var(--accent), 0 0 60px var(--accent-2); }
+    100% { transform: scale(1); text-shadow: none; }
+  }
+
+  #milestone-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-30px);
+    background: linear-gradient(135deg, var(--accent-2), #f472b6);
+    color: #14101f;
+    font-weight: 700;
+    padding: 12px 22px;
+    border-radius: 999px;
+    box-shadow: 0 8px 26px -6px rgba(167, 139, 250, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1001;
+    white-space: nowrap;
+  }
+
+  #milestone-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* --- Mobile --- */
+  @media (max-width: 480px) {
+    body { padding: 16px; }
+
+    header h1 { font-size: 1.9rem; }
+
+    .hero svg { width: 130px; height: 78px; }
+
+    .card { padding: 16px; }
+
+    #hodl-count, #ticker-price { font-size: 2rem; }
+
+    #counter-widget, #ticker-widget { gap: 12px; }
+
+    button { padding: 10px 14px; font-size: 0.95rem; }
+
+    #news-header { flex-wrap: wrap; gap: 10px; }
+
+    #milestone-toast { font-size: 0.85rem; padding: 10px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hero">
+    <svg viewBox="0 0 200 120" width="180" height="108" aria-hidden="true">
+      <circle cx="150" cy="26" r="20" fill="#3a3f52"/>
+      <circle cx="142" cy="20" r="20" fill="var(--bg)"/>
+      <circle cx="24" cy="18" r="1.4" fill="#fff"/>
+      <circle cx="44" cy="46" r="1" fill="#fff"/>
+      <circle cx="76" cy="12" r="1.2" fill="#fff"/>
+      <circle cx="16" cy="70" r="1" fill="#fff"/>
+      <g class="rocket">
+        <path class="flame" d="M52 100 Q60 132 68 100 Q60 113 52 100 Z" fill="#fbbf24"/>
+        <path d="M46 85 L30 106 L46 100 Z" fill="var(--accent-2)"/>
+        <path d="M74 85 L90 106 L74 100 Z" fill="var(--accent-2)"/>
+        <ellipse cx="60" cy="68" rx="15" ry="32" fill="url(#rocketBody)"/>
+        <path d="M45 50 Q60 18 75 50 Z" fill="var(--accent-2)"/>
+        <circle cx="60" cy="60" r="7" fill="#0f1117" stroke="var(--accent)" stroke-width="2.5"/>
+      </g>
+      <defs>
+        <linearGradient id="rocketBody" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--accent)"/>
+          <stop offset="100%" stop-color="#22d3ee"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <h1>💎🙌 GME Pulse</h1>
+</header>
+
+<div id="milestone-toast"></div>
+
+<main>
+  <section class="card">
+    <h2>Diamond Hands Counter</h2>
+    <div id="counter-widget">
+      <div id="hodl-count">0</div>
+      <button id="hodl-btn">🙌 HODL</button>
+      <button id="reset-btn">Reset</button>
+      <div id="mood"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>GME Live Price</h2>
+    <div id="ticker-widget">
+      <div id="ticker-price">—</div>
+      <div id="ticker-change"></div>
+      <div id="ticker-meta">Loading…</div>
+    </div>
+    <div id="key-setup" class="hidden">
+      <p>To show a live price, paste a free Finnhub API key (get one at
+        <a href="https://finnhub.io/register" target="_blank" rel="noopener noreferrer">finnhub.io/register</a>,
+        no card needed). It's saved only in your own browser, never sent anywhere but Finnhub.</p>
+      <div class="key-setup-row">
+        <input id="key-input" type="text" placeholder="Paste your Finnhub API key">
+        <button id="key-save-btn">Save</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div id="news-header">
+      <h2>GameStop News</h2>
+      <button id="refresh-btn">Refresh</button>
+    </div>
+    <div id="news-status">Loading headlines…</div>
+    <ul id="news-list"></ul>
+  </section>
+</main>
+
+<script>
+  // --- Diamond hands counter (localStorage persists the count across reloads) ---
+  const countEl = document.getElementById('hodl-count');
+  const moodEl = document.getElementById('mood');
+  const hodlBtn = document.getElementById('hodl-btn');
+  const resetBtn = document.getElementById('reset-btn');
+
+  let count = Number(localStorage.getItem('gme-hodl-count')) || 0;
+
+  const moods = [
+    [0, 'Just getting started…'],
+    [5, 'Hands warming up 🔥'],
+    [15, 'Diamond forming 💎'],
+    [30, 'Certified diamond hands 🙌💎'],
+    [50, 'To the moon 🚀🌕'],
+  ];
+
+  function renderCounter() {
+    countEl.textContent = count;
+    let mood = moods[0][1];
+    for (const [threshold, text] of moods) {
+      if (count >= threshold) mood = text;
+    }
+    moodEl.textContent = mood;
+  }
+
+  // --- Confetti burst (small vanilla-JS effect, no library needed) ---
+  const CONFETTI_COLORS = ['#5eead4', '#a78bfa', '#fbbf24', '#f472b6', '#4ade80'];
+
+  function burstConfetti(x, y, pieceCount) {
+    for (let i = 0; i < pieceCount; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 80 + Math.random() * 160;
+      piece.style.left = x + 'px';
+      piece.style.top = y + 'px';
+      piece.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      piece.style.setProperty('--drift', Math.cos(angle) * distance + 'px');
+      piece.style.setProperty('--fall', Math.sin(angle) * distance + 200 + 'px');
+      piece.style.setProperty('--spin', Math.random() * 720 - 360 + 'deg');
+      piece.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+      document.body.appendChild(piece);
+      piece.addEventListener('animationend', () => piece.remove());
+    }
+  }
+
+  let toastTimer;
+  function showMilestoneToast(text) {
+    const toast = document.getElementById('milestone-toast');
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  hodlBtn.addEventListener('click', (e) => {
+    count++;
+    localStorage.setItem('gme-hodl-count', count);
+    renderCounter();
+
+    burstConfetti(e.clientX, e.clientY, 14);
+
+    const hitMilestone = moods.find(([threshold]) => threshold === count);
+    if (hitMilestone) {
+      countEl.classList.remove('milestone-pulse');
+      void countEl.offsetWidth; // restart the animation
+      countEl.classList.add('milestone-pulse');
+      burstConfetti(window.innerWidth / 2, window.innerHeight / 3, 60);
+      showMilestoneToast(`Milestone! ${hitMilestone[1]}`);
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    count = 0;
+    localStorage.setItem('gme-hodl-count', count);
+    renderCounter();
+  });
+
+  renderCounter();
+
+  // --- Live price ticker (Finnhub free tier: https://finnhub.io) ---
+  // The API key lives only in the visitor's own browser localStorage, entered
+  // via the form below, so this public page's source never contains a real key.
+  const priceEl = document.getElementById('ticker-price');
+  const changeEl = document.getElementById('ticker-change');
+  const tickerMetaEl = document.getElementById('ticker-meta');
+  const keySetupEl = document.getElementById('key-setup');
+  const keyInputEl = document.getElementById('key-input');
+  const keySaveBtn = document.getElementById('key-save-btn');
+
+  async function loadPrice() {
+    const key = localStorage.getItem('finnhub_key');
+    if (!key) {
+      keySetupEl.classList.remove('hidden');
+      tickerMetaEl.textContent = 'Add an API key below to load the live price.';
+      return;
+    }
+
+    try {
+      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=GME&token=${key}`);
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+      if (typeof data.c !== 'number' || data.c === 0) {
+        throw new Error('No quote returned');
+      }
+
+      keySetupEl.classList.add('hidden');
+      priceEl.textContent = '$' + data.c.toFixed(2);
+      const sign = data.d >= 0 ? '+' : '';
+      changeEl.textContent = `${sign}${data.d.toFixed(2)} (${sign}${data.dp.toFixed(2)}%)`;
+      changeEl.className = data.d >= 0 ? 'up' : 'down';
+      tickerMetaEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
+    } catch (err) {
+      tickerMetaEl.textContent = 'Could not load price — check your API key below.';
+      keySetupEl.classList.remove('hidden');
+      console.error(err);
+    }
+  }
+
+  keySaveBtn.addEventListener('click', () => {
+    const key = keyInputEl.value.trim();
+    if (!key) return;
+    localStorage.setItem('finnhub_key', key);
+    keyInputEl.value = '';
+    loadPrice();
+  });
+
+  loadPrice();
+  setInterval(loadPrice, 15000);
+
+  // --- News feed ---
+  // Google News RSS has no CORS headers for direct browser fetch, so we
+  // route it through rss2json (a free public RSS-to-JSON proxy) instead.
+  const RSS_URL = 'https://news.google.com/rss/search?q=GameStop+stock+when:14d&hl=en-US&gl=US&ceid=US:en';
+  const PROXY_URL = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_URL);
+
+  const statusEl = document.getElementById('news-status');
+  const listEl = document.getElementById('news-list');
+  const refreshBtn = document.getElementById('refresh-btn');
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+      ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function loadNews() {
+    statusEl.textContent = 'Loading headlines…';
+    listEl.innerHTML = '';
+    try {
+      const res = await fetch(PROXY_URL);
+      const data = await res.json();
+
+      if (data.status !== 'ok' || !data.items || data.items.length === 0) {
+        throw new Error('No articles returned');
+      }
+
+      statusEl.textContent = '';
+      data.items.slice(0, 8).forEach(item => {
+        const li = document.createElement('li');
+        // Google News RSS titles are formatted "Headline - Outlet".
+        const splitAt = item.title.lastIndexOf(' - ');
+        const headline = splitAt !== -1 ? item.title.slice(0, splitAt) : item.title;
+        const source = splitAt !== -1 ? item.title.slice(splitAt + 3) : 'Google News';
+        li.innerHTML = `
+          <a href="${item.link}" target="_blank" rel="noopener noreferrer">${headline}</a>
+          <div class="news-meta">${source} · ${formatDate(item.pubDate)}</div>
+        `;
+        listEl.appendChild(li);
+      });
+    } catch (err) {
+      statusEl.textContent = 'Could not load live headlines right now (the free proxy may be rate-limited). Try Refresh in a bit.';
+      console.error(err);
+    }
+  }
+
+  refreshBtn.addEventListener('click', loadNews);
+  loadNews();
+</script>
+
+</body>
+</html>
